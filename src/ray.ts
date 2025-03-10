@@ -5,12 +5,23 @@ export function ray(origin: Vec3, direction: Vec3) {
 }
 
 export class Ray {
-  constructor(
-    public origin: Vec3,
-    public dir: Vec3,
-  ) {}
+  _origin: Vec3;
+  _dir: Vec3;
+
+  constructor(origin: Vec3, dir: Vec3) {
+    this._origin = origin;
+    this._dir = dir;
+  }
+
+  get origin() {
+    return this._origin.clone();
+  }
+
+  get direction() {
+    return this._dir.clone();
+  }
 
   at(t: number) {
-    return this.origin.clone().add(this.dir.clone().k(t));
+    return this.origin.add(this.direction.k(t));
   }
 }

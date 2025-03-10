@@ -9,20 +9,29 @@ if (!ctx) throw new Error("No ctx");
 
 function hitSphere(center: Vec3, radius: number, r: Ray) {
   const oc = center.sub(r.origin);
-  const a = r.dir.dot(r.dir);
-  const b = -2 * r.dir.dot(oc);
-  const c = oc.dot(oc) - radius * radius;
-  const discriminant = b * b - 4 * a * c;
+  const a = r.direction.lengthSquared;
+  const h = Vec3.dot(r.direction, oc);
+  const c = oc.lengthSquared - radius * radius;
+  const discriminant = h * h - a * c;
 
-  return discriminant >= 0;
+  if (discriminant < 0) {
+    return -1;
+  }
+
+  const t = (h - Math.sqrt(discriminant)) / a;
+
+  return t;
 }
 
 const rayColor = (r: Ray) => {
-  if (hitSphere(point3(0, 0, -1), 0.5, r)) {
-    return color(1, 0, 0);
+  const t = hitSphere(point3(0, 0, -1), 0.5, r);
+  if (t > 0) {
+    const N = r.at(t).sub(vec3(0, 0, -1)).unit;
+    const c = N.add(color(1, 1, 1)).div(2);
+    return c;
   }
 
-  const unitDirection = r.dir.unit;
+  const unitDirection = r.direction.unit;
   const a = 0.5 * (unitDirection.y + 1.0);
 
   return color(1.0, 1.0, 1.0)
@@ -60,7 +69,8 @@ for (let j = 0; j <= height - 1; j++) {
   for (let i = 0; i <= width - 1; i++) {
     const pixelCenter = pixel00Loc.add(pixelDeltaU.k(i)).add(pixelDeltaV.k(j));
     const rayDirection = pixelCenter.sub(cameraCenter);
-    const r = ray(pixelCenter, rayDirection);
+
+    const r = ray(cameraCenter, rayDirection);
 
     const color = rayColor(r);
 

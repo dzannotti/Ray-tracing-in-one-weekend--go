@@ -75,10 +75,14 @@ export class Vec3 {
   }
 
   get lengthSquared() {
-    return this.dot(this);
+    return Vec3.dot(this, this);
   }
 
   get length() {
     return Math.sqrt(this.lengthSquared);
+  }
+
+  static dot(v: Vec3, u: Vec3): number {
+    return v.x * u.x + v.y * u.y + v.z * u.z;
   }
 }
