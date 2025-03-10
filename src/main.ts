@@ -1,13 +1,27 @@
 import { writeColor } from "./color";
 import { ray, Ray } from "./ray";
-import { vec3, color, point3 } from "./vec3";
+import { vec3, color, point3, Vec3 } from "./vec3";
 
 const canvas = document.querySelector("canvas");
 if (!canvas) throw new Error("No canvas");
 const ctx = canvas?.getContext("2d");
 if (!ctx) throw new Error("No ctx");
 
+function hitSphere(center: Vec3, radius: number, r: Ray) {
+  const oc = center.sub(r.origin);
+  const a = r.dir.dot(r.dir);
+  const b = -2 * r.dir.dot(oc);
+  const c = oc.dot(oc) - radius * radius;
+  const discriminant = b * b - 4 * a * c;
+
+  return discriminant >= 0;
+}
+
 const rayColor = (r: Ray) => {
+  if (hitSphere(point3(0, 0, -1), 0.5, r)) {
+    return color(1, 0, 0);
+  }
+
   const unitDirection = r.dir.unit;
   const a = 0.5 * (unitDirection.y + 1.0);
 
