@@ -1,34 +1,21 @@
 import { writeColor } from "./color";
+import { HitRecord, Hittable } from "./hittable";
+import { HittableList } from "./hittable-list";
 import { ray, Ray } from "./ray";
-import { vec3, color, point3, Vec3 } from "./vec3";
+import { Sphere } from "./sphere";
+import { vec3, color, point3 } from "./vec3";
 
 const canvas = document.querySelector("canvas");
 if (!canvas) throw new Error("No canvas");
 const ctx = canvas?.getContext("2d");
 if (!ctx) throw new Error("No ctx");
 
-function hitSphere(center: Vec3, radius: number, r: Ray) {
-  const oc = center.sub(r.origin);
-  const a = r.direction.lengthSquared;
-  const h = Vec3.dot(r.direction, oc);
-  const c = oc.lengthSquared - radius * radius;
-  const discriminant = h * h - a * c;
+const rayColor = (r: Ray, world: Hittable) => {
+  const rec = new HitRecord();
 
-  if (discriminant < 0) {
-    return -1;
-  }
-
-  const t = (h - Math.sqrt(discriminant)) / a;
-
-  return t;
-}
-
-const rayColor = (r: Ray) => {
-  const t = hitSphere(point3(0, 0, -1), 0.5, r);
-  if (t > 0) {
-    const N = r.at(t).sub(vec3(0, 0, -1)).unit;
-    const c = N.add(color(1, 1, 1)).div(2);
-    return c;
+  const [hasHit, resultRec] = world.hit(r, 0, Infinity, rec);
+  if (hasHit) {
+    return resultRec.normal!.add(color(1, 1, 1)).div(2);
   }
 
   const unitDirection = r.direction.unit;
@@ -45,6 +32,12 @@ const width = 800;
 const height = Math.floor(width / aspectRatio);
 canvas.width = width;
 canvas.height = height;
+
+// World
+
+const world = new HittableList();
+world.add(new Sphere(point3(0, 0, -1), 0.5));
+world.add(new Sphere(point3(0, -100.5, -1), 100));
 
 // Camera
 const focalLength = 1.0;
@@ -72,7 +65,7 @@ for (let j = 0; j <= height - 1; j++) {
 
     const r = ray(cameraCenter, rayDirection);
 
-    const color = rayColor(r);
+    const color = rayColor(r, world);
 
     writeColor(ctx, color, j, i);
   }
