@@ -1,3 +1,4 @@
+import { Interval } from "./interval";
 import { Ray } from "./ray";
 import { Vec3 } from "./vec3";
 
@@ -14,10 +15,5 @@ export class HitRecord {
 }
 
 export abstract class Hittable {
-  abstract hit(
-    r: Ray,
-    rayTMin: number,
-    rayTMax: number,
-    rec: HitRecord,
-  ): [boolean, HitRecord];
+  abstract hit(r: Ray, rayT: Interval, rec: HitRecord): [boolean, HitRecord];
 }

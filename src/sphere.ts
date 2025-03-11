@@ -1,4 +1,5 @@
 import { HitRecord, Hittable } from "./hittable";
+import { Interval } from "./interval";
 import { Ray } from "./ray";
 import { Vec3 } from "./vec3";
 
@@ -10,12 +11,7 @@ export class Sphere extends Hittable {
     super();
   }
 
-  hit(
-    r: Ray,
-    rayTMin: number,
-    rayTMax: number,
-    rec: HitRecord,
-  ): [boolean, HitRecord] {
+  hit(r: Ray, rayT: Interval, rec: HitRecord): [boolean, HitRecord] {
     const oc = this.center.sub(r.origin);
     const a = r.direction.lengthSquared;
     const h = Vec3.dot(r.direction, oc);
@@ -28,10 +24,10 @@ export class Sphere extends Hittable {
 
     let root = (h - Math.sqrt(discriminant)) / a;
 
-    if (root <= rayTMin || rayTMax <= root) {
+    if (!rayT.surrounds(root)) {
       root = (h + Math.sqrt(discriminant)) / a;
 
-      if (root <= rayTMin || rayTMax <= root) {
+      if (!rayT.surrounds(root)) {
         return [false, rec] as const;
       }
     }

@@ -1,9 +1,10 @@
 import { HitRecord, Hittable } from "./hittable";
+import { interval, Interval } from "./interval";
 import { Ray } from "./ray";
 
-export class HittableList {
+export class HittableList extends Hittable {
   objects: Hittable[] = [];
-  
+
   clear() {
     this.objects = [];
   }
@@ -12,13 +13,17 @@ export class HittableList {
     this.objects.push(obj);
   }
 
-  hit(r: Ray, rayTMin: number, rayTMax: number, rec: HitRecord) {
+  hit(r: Ray, rayT: Interval, rec: HitRecord) {
     let tempRec = new HitRecord();
     let hitAnything = false;
-    let closestSoFar = rayTMax;
+    let closestSoFar = rayT.max;
 
     for (const obj of this.objects) {
-      const [hasHit, resultRec] = obj.hit(r, rayTMin, closestSoFar, tempRec);
+      const [hasHit, resultRec] = obj.hit(
+        r,
+        interval(rayT.min, closestSoFar),
+        tempRec,
+      );
       if (hasHit) {
         hitAnything = true;
         closestSoFar = resultRec.t!;
@@ -26,6 +31,6 @@ export class HittableList {
       }
     }
 
-    return [hitAnything, rec];
+    return [hitAnything, rec] as [boolean, HitRecord];
   }
 }

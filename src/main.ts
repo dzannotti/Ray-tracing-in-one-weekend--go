@@ -1,6 +1,7 @@
 import { writeColor } from "./color";
 import { HitRecord, Hittable } from "./hittable";
 import { HittableList } from "./hittable-list";
+import { interval } from "./interval";
 import { ray, Ray } from "./ray";
 import { Sphere } from "./sphere";
 import { vec3, color, point3 } from "./vec3";
@@ -13,7 +14,7 @@ if (!ctx) throw new Error("No ctx");
 const rayColor = (r: Ray, world: Hittable) => {
   const rec = new HitRecord();
 
-  const [hasHit, resultRec] = world.hit(r, 0, Infinity, rec);
+  const [hasHit, resultRec] = world.hit(r, interval(0, Infinity), rec);
   if (hasHit) {
     return resultRec.normal!.add(color(1, 1, 1)).div(2);
   }
