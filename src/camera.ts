@@ -65,27 +65,19 @@ export class Camera {
           pixelColor = pixelColor.add(this.rayColor(r, world));
         }
 
-        // const pixelCenter = this.pixel00Loc
-        //   .add(this.pixelDeltaU.k(i))
-        //   .add(this.pixelDeltaV.k(j));
-        // const rayDirection = pixelCenter.sub(this.cameraCenter);
-        //
-        // const r = ray(this.cameraCenter, rayDirection);
-        //
-        // const color = this.rayColor(r, world);
-
         writeColor(this.ctx, pixelColor.k(this.pixelSamplesScale), j, i);
       }
     }
     console.log("Done!");
   }
 
-  rayColor(r: Ray, world: Hittable) {
+  rayColor(r: Ray, world: Hittable): Vec3 {
     const rec = new HitRecord();
 
     const [hasHit, resultRec] = world.hit(r, interval(0, Infinity), rec);
     if (hasHit) {
-      return resultRec.normal!.add(color(1, 1, 1)).div(2);
+      const direction = Vec3.randomOnHemisphere(resultRec.normal!);
+      return this.rayColor(ray(resultRec.p!, direction), world).k(0.5);
     }
 
     const unitDirection = r.direction.unit;
