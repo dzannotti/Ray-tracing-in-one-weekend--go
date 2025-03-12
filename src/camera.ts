@@ -2,7 +2,10 @@ import { writeColor } from "./color";
 import { HitRecord, Hittable } from "./hittable";
 import { interval } from "./interval";
 import { ray, Ray } from "./ray";
+import { randomNum } from "./utils";
 import { color, point3, Vec3, vec3 } from "./vec3";
+
+const sampleSquare = () => vec3(randomNum() - 0.5, randomNum() - 0.5, 0);
 
 export class Camera {
   height: number;
@@ -10,37 +13,23 @@ export class Camera {
   pixelDeltaU!: Vec3;
   pixelDeltaV!: Vec3;
   cameraCenter!: Vec3;
+  pixelSamplesScale: number;
 
   constructor(
-    public width: number = 800,
-    public aspectRatio: number = 16 / 9,
     public canvas: HTMLCanvasElement,
     public ctx: CanvasRenderingContext2D,
+    public width: number = 800,
+    public aspectRatio: number = 16 / 9,
+    public samplesPerPixel: number = 10,
   ) {
     // Image
     this.height = Math.floor(width / aspectRatio);
     canvas.width = width;
     canvas.height = this.height;
+
+    this.pixelSamplesScale = 1 / samplesPerPixel;
+
     this.initialize();
-  }
-
-  render(world: Hittable) {
-    for (let j = 0; j <= this.height - 1; j++) {
-      console.log(`Rendering scanline ${j}`);
-      for (let i = 0; i <= this.width - 1; i++) {
-        const pixelCenter = this.pixel00Loc
-          .add(this.pixelDeltaU.k(i))
-          .add(this.pixelDeltaV.k(j));
-        const rayDirection = pixelCenter.sub(this.cameraCenter);
-
-        const r = ray(this.cameraCenter, rayDirection);
-
-        const color = this.rayColor(r, world);
-
-        writeColor(this.ctx, color, j, i);
-      }
-    }
-    console.log("Done!");
   }
 
   initialize() {
@@ -65,6 +54,32 @@ export class Camera {
     );
   }
 
+  render(world: Hittable) {
+    for (let j = 0; j <= this.height - 1; j++) {
+      console.log(`Rendering scanline ${j}`);
+      for (let i = 0; i <= this.width - 1; i++) {
+        let pixelColor = vec3(0, 0, 0);
+
+        for (let sample = 0; sample < this.samplesPerPixel; sample++) {
+          const r = this.getRay(i, j);
+          pixelColor = pixelColor.add(this.rayColor(r, world));
+        }
+
+        // const pixelCenter = this.pixel00Loc
+        //   .add(this.pixelDeltaU.k(i))
+        //   .add(this.pixelDeltaV.k(j));
+        // const rayDirection = pixelCenter.sub(this.cameraCenter);
+        //
+        // const r = ray(this.cameraCenter, rayDirection);
+        //
+        // const color = this.rayColor(r, world);
+
+        writeColor(this.ctx, pixelColor.k(this.pixelSamplesScale), j, i);
+      }
+    }
+    console.log("Done!");
+  }
+
   rayColor(r: Ray, world: Hittable) {
     const rec = new HitRecord();
 
@@ -79,5 +94,18 @@ export class Camera {
     return color(1.0, 1.0, 1.0)
       .k(1 - a)
       .add(color(0.5, 0.7, 1.0).k(a));
+  }
+
+  getRay(i: number, j: number) {
+    const offset = sampleSquare();
+
+    const pixelSample = this.pixel00Loc
+      .add(this.pixelDeltaU.k(i + offset.x))
+      .add(this.pixelDeltaV.k(j + offset.y));
+
+    const rayOrigin = this.cameraCenter;
+    const rayDirection = pixelSample.sub(rayOrigin);
+
+    return ray(rayOrigin, rayDirection);
   }
 }
