@@ -14,14 +14,35 @@ export class Camera {
   pixelDeltaV!: Vec3;
   cameraCenter!: Vec3;
   pixelSamplesScale: number;
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  width: number;
+  aspectRatio: number;
+  samplesPerPixel: number;
+  maxDepth: number;
 
-  constructor(
-    public canvas: HTMLCanvasElement,
-    public ctx: CanvasRenderingContext2D,
-    public width: number = 800,
-    public aspectRatio: number = 16 / 9,
-    public samplesPerPixel: number = 10,
-  ) {
+  constructor({
+    canvas,
+    ctx,
+    width = 800,
+    aspectRatio = 16 / 9,
+    samplesPerPixel = 10,
+    maxDepth = 10,
+  }: {
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    width?: number;
+    aspectRatio?: number;
+    samplesPerPixel?: number;
+    maxDepth?: number;
+  }) {
+    this.canvas = canvas;
+    this.ctx = ctx;
+    this.width = width;
+    this.aspectRatio = aspectRatio;
+    this.samplesPerPixel = samplesPerPixel;
+    this.maxDepth = maxDepth;
+
     // Image
     this.height = Math.floor(width / aspectRatio);
     canvas.width = width;
@@ -62,7 +83,7 @@ export class Camera {
 
         for (let sample = 0; sample < this.samplesPerPixel; sample++) {
           const r = this.getRay(i, j);
-          pixelColor = pixelColor.add(this.rayColor(r, world));
+          pixelColor = pixelColor.add(this.rayColor(r, this.maxDepth, world));
         }
 
         writeColor(this.ctx, pixelColor.k(this.pixelSamplesScale), j, i);
@@ -71,13 +92,17 @@ export class Camera {
     console.log("Done!");
   }
 
-  rayColor(r: Ray, world: Hittable): Vec3 {
+  rayColor(r: Ray, depth: number, world: Hittable): Vec3 {
+    if (depth <= 0) return color(0, 0, 0);
+
     const rec = new HitRecord();
 
-    const [hasHit, resultRec] = world.hit(r, interval(0, Infinity), rec);
+    const [hasHit, resultRec] = world.hit(r, interval(0.0001, Infinity), rec);
     if (hasHit) {
       const direction = Vec3.randomOnHemisphere(resultRec.normal!);
-      return this.rayColor(ray(resultRec.p!, direction), world).k(0.5);
+      return this.rayColor(ray(resultRec.p!, direction), depth - 1, world).k(
+        0.5,
+      );
     }
 
     const unitDirection = r.direction.unit;

@@ -13,6 +13,13 @@ const world = new HittableList();
 world.add(new Sphere(point3(0, 0, -1), 0.5));
 world.add(new Sphere(point3(0, -100.5, -1), 100));
 
-const cam = new Camera(canvas, ctx, 600, 16 / 9, 100);
+const cam = new Camera({
+  canvas,
+  ctx,
+  width: 600,
+  aspectRatio: 16 / 9,
+  samplesPerPixel: 100,
+  maxDepth: 50,
+});
 
 cam.render(world);
