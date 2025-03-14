@@ -99,7 +99,7 @@ export class Camera {
 
     const [hasHit, resultRec] = world.hit(r, interval(0.0001, Infinity), rec);
     if (hasHit) {
-      const direction = Vec3.randomOnHemisphere(resultRec.normal!);
+      const direction = resultRec.normal!.add(Vec3.randomUnitVector());
       return this.rayColor(ray(resultRec.p!, direction), depth - 1, world).k(
         0.5,
       );
