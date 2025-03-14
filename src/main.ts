@@ -10,9 +10,9 @@ const ctx = canvas?.getContext("2d");
 if (!ctx) throw new Error("No ctx");
 
 const ground = new Lambertian(color(0.8, 0.8, 0));
-const center = new Lambertian(color(0.1, 0.2, .5));
-const left = new Metal(color(0.8, 0.8, .8));
-const right = new Metal(color(0.8, 0.6, .2));
+const center = new Lambertian(color(0.1, 0.2, 0.5));
+const left = new Metal(color(0.8, 0.8, 0.8), 0.3);
+const right = new Metal(color(0.8, 0.6, 0.2), 1.0);
 
 // World
 const world = new HittableList();
