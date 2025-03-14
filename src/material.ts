@@ -1,0 +1,54 @@
+import { HitRecord } from "./hittable";
+import { ray, Ray } from "./ray";
+import { Ref } from "./ref";
+import { Vec3 } from "./vec3";
+
+export abstract class Material {
+  abstract scatter(
+    rayIn: Ref<Ray>,
+    rec: HitRecord,
+    attenuation: Ref<Vec3>,
+    scattered: Ref<Ray>,
+  ): boolean;
+}
+
+export class Lambertian extends Material {
+  constructor(public albedo: Vec3) {
+    super();
+  }
+
+  override scatter(
+    _rayIn: Ref<Ray>,
+    rec: HitRecord,
+    attenuation: Ref<Vec3>,
+    scattered: Ref<Ray>,
+  ): boolean {
+    let scatterDirection = rec.normal!.add(Vec3.randomUnitVector());
+
+    if (scatterDirection.nearZero()) {
+      scatterDirection = rec.normal!.clone();
+    }
+
+    scattered.value = ray(rec.p!, scatterDirection);
+    attenuation.value = this.albedo;
+    return true;
+  }
+}
+
+export class Metal extends Material {
+  constructor(public albedo: Vec3) {
+    super();
+  }
+
+  override scatter(
+    rayIn: Ref<Ray>,
+    rec: HitRecord,
+    attenuation: Ref<Vec3>,
+    scattered: Ref<Ray>,
+  ): boolean {
+    const reflected = Vec3.reflect(rayIn.value!.direction, rec.normal!);
+    scattered.value = ray(rec.p!, reflected);
+    attenuation.value = this.albedo;
+    return true;
+  }
+}

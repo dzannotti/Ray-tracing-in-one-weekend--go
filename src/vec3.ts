@@ -58,6 +58,10 @@ export class Vec3 {
     return this.k(1 / n);
   }
 
+  vectorMultiply(v: Vec3) {
+    return vec3(v.x * this.x, v.y * this.y, v.z * this.z);
+  }
+
   get [0]() {
     return this.x;
   }
@@ -84,8 +88,18 @@ export class Vec3 {
     return Math.sqrt(this.lengthSquared);
   }
 
+  nearZero() {
+    const s = 1e-8;
+    return Math.abs(this.x) < s && Math.abs(this.y) < s && Math.abs(this.z) < s;
+  }
+
   static dot(v: Vec3, u: Vec3): number {
     return v.x * u.x + v.y * u.y + v.z * u.z;
+  }
+
+  static reflect(v: Vec3, n: Vec3) {
+    // v - 2*dot(v,n)*n
+    return v.sub(n.k(this.dot(v, n) * 2));
   }
 
   static random() {

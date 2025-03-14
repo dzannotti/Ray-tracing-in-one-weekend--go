@@ -1,17 +1,25 @@
 import { Camera } from "./camera";
 import { HittableList } from "./hittable-list";
+import { Lambertian, Metal } from "./material";
 import { Sphere } from "./sphere";
-import { point3 } from "./vec3";
+import { color, point3 } from "./vec3";
 
 const canvas = document.querySelector("canvas");
 if (!canvas) throw new Error("No canvas");
 const ctx = canvas?.getContext("2d");
 if (!ctx) throw new Error("No ctx");
 
+const ground = new Lambertian(color(0.8, 0.8, 0));
+const center = new Lambertian(color(0.1, 0.2, .5));
+const left = new Metal(color(0.8, 0.8, .8));
+const right = new Metal(color(0.8, 0.6, .2));
+
 // World
 const world = new HittableList();
-world.add(new Sphere(point3(0, 0, -1), 0.5));
-world.add(new Sphere(point3(0, -100.5, -1), 100));
+world.add(new Sphere(point3(0, -100.5, -1), 100, ground));
+world.add(new Sphere(point3(0, 0, -1.2), 0.5, center));
+world.add(new Sphere(point3(-1, 0, -1), 0.5, left));
+world.add(new Sphere(point3(1, 0, -1), 0.5, right));
 
 const cam = new Camera({
   canvas,

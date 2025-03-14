@@ -2,6 +2,7 @@ import { writeColor } from "./color";
 import { HitRecord, Hittable } from "./hittable";
 import { interval } from "./interval";
 import { ray, Ray } from "./ray";
+import { ref, Ref } from "./ref";
 import { randomNum } from "./utils";
 import { color, point3, Vec3, vec3 } from "./vec3";
 
@@ -99,10 +100,18 @@ export class Camera {
 
     const [hasHit, resultRec] = world.hit(r, interval(0.0001, Infinity), rec);
     if (hasHit) {
-      const direction = resultRec.normal!.add(Vec3.randomUnitVector());
-      return this.rayColor(ray(resultRec.p!, direction), depth - 1, world).k(
-        0.5,
-      );
+      let scattered: Ref<Ray> = {};
+      let attenuation: Ref<Vec3> = {};
+
+      if (
+        resultRec.material!.scatter(ref(r), resultRec, attenuation, scattered)
+      ) {
+        return this.rayColor(scattered.value!, depth - 1, world).vectorMultiply(
+          attenuation.value!,
+        );
+      } else {
+        return color(0, 0, 0);
+      }
     }
 
     const unitDirection = r.direction.unit;

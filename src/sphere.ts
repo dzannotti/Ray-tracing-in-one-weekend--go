@@ -1,5 +1,6 @@
 import { HitRecord, Hittable } from "./hittable";
 import { Interval } from "./interval";
+import { Material } from "./material";
 import { Ray } from "./ray";
 import { Vec3 } from "./vec3";
 
@@ -7,6 +8,7 @@ export class Sphere extends Hittable {
   constructor(
     public center: Vec3,
     public radius: number,
+    public material: Material,
   ) {
     super();
   }
@@ -36,6 +38,7 @@ export class Sphere extends Hittable {
     rec.p = r.at(rec.t);
     let outwardNormal = rec.p.sub(this.center).div(this.radius);
     rec.setFaceNormal(r, outwardNormal);
+    rec.material = this.material;
 
     return [true, rec] as const;
   }
