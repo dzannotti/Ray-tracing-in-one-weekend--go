@@ -25,6 +25,10 @@ export class Camera {
   lookFrom: Vec3;
   lookAt: Vec3;
   vUp: Vec3;
+  defocusAngle: number;
+  focusDist: number;
+  defocusDiskU!: Vec3;
+  defocusDiskV!: Vec3;
 
   constructor({
     width = 800,
@@ -35,6 +39,8 @@ export class Camera {
     lookFrom = point3(0, 0, 0),
     lookAt = point3(0, 0, -1),
     vUp = vec3(0, 1, 0),
+    defocusAngle = 0,
+    focusDist = 10,
   }: {
     width?: number;
     aspectRatio?: number;
@@ -44,6 +50,8 @@ export class Camera {
     lookFrom?: Vec3;
     lookAt?: Vec3;
     vUp?: Vec3;
+    defocusAngle?: number;
+    focusDist?: number;
   }) {
     const canvas = document.querySelector("canvas");
     if (!canvas) throw new Error("No canvas");
@@ -68,6 +76,8 @@ export class Camera {
     this.lookFrom = lookFrom;
     this.lookAt = lookAt;
     this.vUp = vUp;
+    this.defocusAngle = defocusAngle;
+    this.focusDist = focusDist;
 
     this.initialize();
   }
@@ -76,10 +86,9 @@ export class Camera {
     this.cameraCenter = this.lookFrom.clone();
 
     // Camera
-    const focalLength = this.lookFrom.sub(this.lookAt).length;
     const theta = degreesToRadians(this.vfov);
     const h = Math.tan(theta / 2);
-    const viewportHeight = 2.0 * h * focalLength;
+    const viewportHeight = 2.0 * h * this.focusDist;
     const viewportWidth = viewportHeight * (this.width / this.height);
 
     // Calculate camera basis vectors for camera coordinates
@@ -94,12 +103,18 @@ export class Camera {
     this.pixelDeltaV = viewportV.div(this.height);
 
     const viewportUpperLeft = this.cameraCenter
-      .sub(w.k(focalLength))
+      .sub(w.k(this.focusDist))
       .sub(viewportU.div(2))
       .sub(viewportV.div(2));
     this.pixel00Loc = viewportUpperLeft.add(
       this.pixelDeltaU.add(this.pixelDeltaV).div(2),
     );
+
+    // camera defocus disk basis vectors
+    const defocusRadius =
+      this.focusDist * Math.tan(degreesToRadians(this.defocusAngle / 2));
+    this.defocusDiskU = u.k(defocusRadius);
+    this.defocusDiskV = v.k(defocusRadius);
   }
 
   render(world: Hittable) {
@@ -155,9 +170,17 @@ export class Camera {
       .add(this.pixelDeltaU.k(i + offset.x))
       .add(this.pixelDeltaV.k(j + offset.y));
 
-    const rayOrigin = this.cameraCenter;
+    const rayOrigin =
+      this.defocusAngle <= 0 ? this.cameraCenter : this.defocusDiskSample();
     const rayDirection = pixelSample.sub(rayOrigin);
 
     return ray(rayOrigin, rayDirection);
+  }
+
+  defocusDiskSample() {
+    const p = Vec3.randomInUnitDisk();
+    return this.cameraCenter
+      .add(this.defocusDiskU.k(p.x))
+      .add(this.defocusDiskV.k(p.y));
   }
 }

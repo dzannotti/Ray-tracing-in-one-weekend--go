@@ -27,6 +27,8 @@ const cam = new Camera({
   vfov: 20,
   lookFrom: point3(-2,2,1),
   lookAt: point3(0,0,-1),
+  defocusAngle: 10,
+  focusDist: 3.4,
 });
 
 cam.render(world);
