@@ -1,6 +1,7 @@
 import { HitRecord } from "./hittable";
 import { ray, Ray } from "./ray";
 import { Ref } from "./ref";
+import { randomNum } from "./utils";
 import { color, Vec3 } from "./vec3";
 
 export abstract class Material {
@@ -86,15 +87,22 @@ export class Dialectric extends Material {
 
     let direction: Vec3;
 
-    if (cannotRefract) {
+    if (cannotRefract || this.reflectance(cosTheta, ri) > randomNum()) {
       direction = Vec3.reflect(unitDirection, rec.normal!);
     } else {
       direction = Vec3.refract(unitDirection, rec.normal!, ri);
-
     }
 
     scattered.value = ray(rec.p!, direction);
 
     return true;
+  }
+
+  reflectance(cosine: number, refractionIndex: number) {
+    // Schlick's approximation
+    let r0 = (1 - refractionIndex) / (1 + refractionIndex);
+    r0 = r0 * r0;
+
+    return r0 + (1 - r0) * Math.pow(1 - cosine, 5);
   }
 }
