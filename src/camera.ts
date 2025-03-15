@@ -23,22 +23,23 @@ export class Camera {
   maxDepth: number;
 
   constructor({
-    canvas,
-    ctx,
     width = 800,
     aspectRatio = 16 / 9,
     samplesPerPixel = 10,
     maxDepth = 10,
   }: {
-    canvas: HTMLCanvasElement;
-    ctx: CanvasRenderingContext2D;
     width?: number;
     aspectRatio?: number;
     samplesPerPixel?: number;
     maxDepth?: number;
   }) {
+    const canvas = document.querySelector("canvas");
+    if (!canvas) throw new Error("No canvas");
     this.canvas = canvas;
+    const ctx = this.canvas?.getContext("2d");
+    if (!ctx) throw new Error("No ctx");
     this.ctx = ctx;
+
     this.width = width;
     this.aspectRatio = aspectRatio;
     this.samplesPerPixel = samplesPerPixel;
@@ -46,8 +47,8 @@ export class Camera {
 
     // Image
     this.height = Math.floor(width / aspectRatio);
-    canvas.width = width;
-    canvas.height = this.height;
+    this.canvas.width = width;
+    this.canvas.height = this.height;
 
     this.pixelSamplesScale = 1 / samplesPerPixel;
 

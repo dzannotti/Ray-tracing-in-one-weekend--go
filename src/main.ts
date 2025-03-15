@@ -4,11 +4,6 @@ import { Lambertian, Metal } from "./material";
 import { Sphere } from "./sphere";
 import { color, point3 } from "./vec3";
 
-const canvas = document.querySelector("canvas");
-if (!canvas) throw new Error("No canvas");
-const ctx = canvas?.getContext("2d");
-if (!ctx) throw new Error("No ctx");
-
 const ground = new Lambertian(color(0.8, 0.8, 0));
 const center = new Lambertian(color(0.1, 0.2, 0.5));
 const left = new Metal(color(0.8, 0.8, 0.8), 0.3);
@@ -22,8 +17,6 @@ world.add(new Sphere(point3(-1, 0, -1), 0.5, left));
 world.add(new Sphere(point3(1, 0, -1), 0.5, right));
 
 const cam = new Camera({
-  canvas,
-  ctx,
   width: 600,
   aspectRatio: 16 / 9,
   samplesPerPixel: 100,
