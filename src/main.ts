@@ -12,6 +12,7 @@ const right = new Metal(color(0.8, 0.6, 0.2), 1.0);
 
 // World
 const world = new HittableList();
+
 world.add(new Sphere(point3(0, -100.5, -1), 100, ground));
 world.add(new Sphere(point3(0, 0, -1.2), 0.5, center));
 world.add(new Sphere(point3(-1, 0, -1), 0.5, left));
@@ -23,6 +24,9 @@ const cam = new Camera({
   aspectRatio: 16 / 9,
   samplesPerPixel: 100,
   maxDepth: 50,
+  vfov: 20,
+  lookFrom: point3(-2,2,1),
+  lookAt: point3(0,0,-1),
 });
 
 cam.render(world);

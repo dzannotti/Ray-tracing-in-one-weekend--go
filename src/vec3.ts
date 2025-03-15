@@ -134,10 +134,27 @@ export class Vec3 {
     }
   }
 
+  static randomInUnitDisk() {
+    while (true) {
+      const p = vec3(randomBetween(-1, 1), randomBetween(-1, 1), 0);
+      if (p.lengthSquared < 1) {
+        return p;
+      }
+    }
+  }
+
   static refract(uv: Vec3, n: Vec3, etaiOverEtat: number) {
     const cosTheta = Math.min(this.dot(uv.k(-1), n), 1.0);
     const rOutPerp = uv.add(n.k(cosTheta)).k(etaiOverEtat);
     const rOutParallel = n.k(-Math.sqrt(Math.abs(1 - rOutPerp.lengthSquared)));
     return rOutPerp.add(rOutParallel);
+  }
+
+  static cross(u: Vec3, v: Vec3) {
+    return vec3(
+      u.y * v.z - u.z * v.y,
+      u.z * v.x - u.x * v.z,
+      u.x * v.y - u.y * v.x,
+    );
   }
 }
