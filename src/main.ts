@@ -2,33 +2,59 @@ import { Camera } from "./camera";
 import { HittableList } from "./hittable-list";
 import { Dialectric, Lambertian, Metal } from "./material";
 import { Sphere } from "./sphere";
-import { color, point3 } from "./vec3";
+import { randomBetween, randomNum } from "./utils";
+import { color, point3, Vec3 } from "./vec3";
 
-const ground = new Lambertian(color(0.8, 0.8, 0));
-const center = new Lambertian(color(0.1, 0.2, 0.5));
-const left = new Dialectric(1.5);
-const bubble = new Dialectric(1 / 1.5);
-const right = new Metal(color(0.8, 0.6, 0.2), 1.0);
+function main() {
+  const world = new HittableList();
 
-// World
-const world = new HittableList();
+  const ground = new Lambertian(color(0.5, 0.5, 0.5));
+  world.add(new Sphere(point3(0, -1000, -1), 1000, ground));
 
-world.add(new Sphere(point3(0, -100.5, -1), 100, ground));
-world.add(new Sphere(point3(0, 0, -1.2), 0.5, center));
-world.add(new Sphere(point3(-1, 0, -1), 0.5, left));
-world.add(new Sphere(point3(-1, 0, -1), 0.4, bubble));
-world.add(new Sphere(point3(1, 0, -1), 0.5, right));
+  for (let a = -11; a < 11; a++) {
+    for (let b = -11; b < 11; b++) {
+      const chooseMaterial = randomNum();
+      const center = point3(a + 0.9 * randomNum(), 0.2, b + 0.9 * randomNum());
 
-const cam = new Camera({
-  width: 600,
-  aspectRatio: 16 / 9,
-  samplesPerPixel: 100,
-  maxDepth: 50,
-  vfov: 20,
-  lookFrom: point3(-2,2,1),
-  lookAt: point3(0,0,-1),
-  defocusAngle: 10,
-  focusDist: 3.4,
-});
+      if (center.sub(point3(4, 0.2, 0)).length > 0.9) {
+        if (chooseMaterial < 0.8) {
+          const albedo = Vec3.random().vectorMultiply(Vec3.random());
+          const material = new Lambertian(albedo);
+          world.add(new Sphere(center, 0.2, material));
+        } else if (chooseMaterial < 0.95) {
+          const albedo = Vec3.randomBetween(0.5, 1);
+          const fuzz = randomBetween(0, 0.5);
+          const material = new Metal(albedo, fuzz);
+          world.add(new Sphere(center, 0.2, material));
+        } else {
+          const material = new Dialectric(1.5);
+          world.add(new Sphere(center, 0.2, material));
+        }
+      }
+    }
+  }
+  const material1 = new Dialectric(1.5);
+  world.add(new Sphere(point3(0, 1, 0), 1.0, material1));
 
-cam.render(world);
+  const material2 = new Lambertian(color(0.4, 0.2, 0.1));
+  world.add(new Sphere(point3(-4, 1, 0), 1.0, material2));
+
+  const material3 = new Metal(color(0.7, 0.6, 0.5), 0.0);
+  world.add(new Sphere(point3(4, 1, 0), 1.0, material3));
+
+  const cam = new Camera({
+    width: 800,
+    aspectRatio: 16 / 9,
+    samplesPerPixel: 100,
+    maxDepth: 50,
+    vfov: 20,
+    lookFrom: point3(13, 2, 3),
+    lookAt: point3(0, 0, 0),
+    defocusAngle: 0.6,
+    focusDist: 10,
+  });
+
+  cam.render(world);
+}
+
+window.button.onclick = main;
