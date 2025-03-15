@@ -1,12 +1,12 @@
 import { Camera } from "./camera";
 import { HittableList } from "./hittable-list";
-import { Lambertian, Metal } from "./material";
+import { Dialectric, Lambertian, Metal } from "./material";
 import { Sphere } from "./sphere";
 import { color, point3 } from "./vec3";
 
 const ground = new Lambertian(color(0.8, 0.8, 0));
 const center = new Lambertian(color(0.1, 0.2, 0.5));
-const left = new Metal(color(0.8, 0.8, 0.8), 0.3);
+const left = new Dialectric(1 / 1.33);
 const right = new Metal(color(0.8, 0.6, 0.2), 1.0);
 
 // World

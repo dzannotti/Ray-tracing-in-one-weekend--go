@@ -1,7 +1,7 @@
 import { HitRecord } from "./hittable";
 import { ray, Ray } from "./ray";
 import { Ref } from "./ref";
-import { Vec3 } from "./vec3";
+import { color, Vec3 } from "./vec3";
 
 export abstract class Material {
   abstract scatter(
@@ -57,5 +57,44 @@ export class Metal extends Material {
     scattered.value = ray(rec.p!, reflected);
     attenuation.value = this.albedo;
     return Vec3.dot(scattered.value.direction!, rec.normal!) > 0;
+  }
+}
+
+export class Dialectric extends Material {
+  constructor(public refractionIndex: number) {
+    super();
+  }
+
+  scatter(
+    rayIn: Ref<Ray>,
+    rec: HitRecord,
+    attenuation: Ref<Vec3>,
+    scattered: Ref<Ray>,
+  ): boolean {
+    attenuation.value = color(1, 1, 1);
+
+    const ri = rec.frontFace!
+      ? 1.0 / this.refractionIndex
+      : this.refractionIndex;
+
+    const unitDirection = rayIn.value!.direction.unit;
+
+    const cosTheta = Math.min(Vec3.dot(unitDirection.k(-1), rec.normal!), 1.0);
+    const sinTheta = Math.sqrt(1 - cosTheta * cosTheta);
+
+    const cannotRefract = ri * sinTheta > 1;
+
+    let direction: Vec3;
+
+    if (cannotRefract) {
+      direction = Vec3.reflect(unitDirection, rec.normal!);
+    } else {
+      direction = Vec3.refract(unitDirection, rec.normal!, ri);
+
+    }
+
+    scattered.value = ray(rec.p!, direction);
+
+    return true;
   }
 }

@@ -133,4 +133,11 @@ export class Vec3 {
       return onUnitSphere.k(-1);
     }
   }
+
+  static refract(uv: Vec3, n: Vec3, etaiOverEtat: number) {
+    const cosTheta = Math.min(this.dot(uv.k(-1), n), 1.0);
+    const rOutPerp = uv.add(n.k(cosTheta)).k(etaiOverEtat);
+    const rOutParallel = n.k(-Math.sqrt(Math.abs(1 - rOutPerp.lengthSquared)));
+    return rOutPerp.add(rOutParallel);
+  }
 }
