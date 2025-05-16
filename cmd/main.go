@@ -3,12 +3,21 @@ package main
 import (
 	"fmt"
 	"image/png"
+	"log"
 	"os"
 	"raytracer/math3"
 	"raytracer/raytracer"
+	"runtime/pprof"
 )
 
 func main() {
+	f, err := os.Create("cpu_profile.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	world := raytracer.World{}
 
 	ground := raytracer.Lambertian{Albedo: math3.Vec3{0.5, 0.5, 0.5}}
@@ -25,7 +34,7 @@ func main() {
 	camera := raytracer.NewCamera(raytracer.CameraParams{
 		Width:           320,
 		AspectRatio:     16 / 9.0,
-		SamplesPerPixel: 10,
+		SamplesPerPixel: 100,
 		MaxDepth:        50,
 		VFov:            20,
 		LookFrom:        math3.Vec3{13, 2, 3},
@@ -44,4 +53,10 @@ func main() {
 	}
 
 	fmt.Println("Image saved as final-screenshot.png")
+	mf, err := os.Create("mem_profile.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.WriteHeapProfile(mf)
+	mf.Close()
 }

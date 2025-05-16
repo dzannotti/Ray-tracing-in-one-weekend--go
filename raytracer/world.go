@@ -21,8 +21,7 @@ func (w *World) Hit(ray math3.Ray, rayT Interval) (HitRecord, bool) {
 	closestSoFar := rayT.Max
 	rec := HitRecord{}
 	for _, obj := range w.Objects {
-		localRec, hasHit := obj.Hit(ray, Interval{Min: rayT.Min, Max: closestSoFar})
-		if hasHit {
+		if localRec, hasHit := obj.Hit(ray, Interval{Min: rayT.Min, Max: closestSoFar}); hasHit {
 			hitAnything = true
 			closestSoFar = localRec.T
 			rec = localRec

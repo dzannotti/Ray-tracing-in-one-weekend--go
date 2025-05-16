@@ -93,9 +93,9 @@ func (cam *Camera) Render(world World) *image.RGBA {
 	return img
 }
 
-func (cam *Camera) GetRay(x int, y int) math3.Ray {
-	offset := math3.Vec3{rand.Float64() - 0.5, rand.Float64() - 0.5, 0}
-	pixelSample := cam.Pixel00Loc.Add(cam.PixelDeltaU.Scale(float64(x) + offset.X())).Add(cam.PixelDeltaV.Scale(float64(y) + offset.Y()))
+func (cam *Camera) GetRay(x, y int) math3.Ray {
+	offsetX, offsetY := rand.Float64()-0.5, rand.Float64()-0.5
+	pixelSample := cam.Pixel00Loc.Add(cam.PixelDeltaU.Scale(float64(x) + offsetX)).Add(cam.PixelDeltaV.Scale(float64(y) + offsetY))
 	rayOrigin := cam.DefocusDiskSample()
 	if cam.DefocusAngle <= 0 {
 		rayOrigin = cam.Center
@@ -113,14 +113,13 @@ func (cam *Camera) RayColor(r math3.Ray, depth float64, world World) math3.Vec3 
 	if depth <= 0 {
 		return math3.Vec3{0.0, 0.0, 0.0}
 	}
-	result, hasHit := world.Hit(r, Interval{Min: 0.001, Max: math.MaxFloat64})
-	if hasHit {
-		attenuation, scattered, ok := result.Material.Scatter(r, result)
-		if ok {
+	if result, hasHit := world.Hit(r, Interval{Min: 0.001, Max: math.MaxFloat64}); hasHit {
+		if attenuation, scattered, ok := result.Material.Scatter(r, result); ok {
 			return cam.RayColor(scattered, depth-1, world).Multiply(attenuation)
 		}
-		return attenuation
+		return math3.Vec3{}
 	}
-	a := 0.5 * (r.Direction.Normalize().Y() + 1.0)
+	d := r.Direction.Normalize()
+	a := 0.5 * (d.Y() + 1.0)
 	return math3.Vec3{1.0, 1.0, 1.0}.Scale(1.0 - a).Add(math3.Vec3{0.5, 0.7, 1.0}.Scale(a))
 }
