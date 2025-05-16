@@ -3,6 +3,7 @@ package raytracer
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 	"math/rand/v2"
 	"raytracer/math3"
@@ -77,20 +78,50 @@ func NewCamera(params CameraParams) *Camera {
 	return cam
 }
 
-func (cam *Camera) Render(world World) *image.RGBA {
+func (cam *Camera) Render(world World, usePool bool) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, cam.Width, cam.Height))
-	for y := 0; y < cam.Height; y++ {
-		fmt.Printf("Rendering scanline %d\n", y)
-		for x := 0; x < cam.Width; x++ {
-			pixelColor := math3.Vec3{}
-			for sample := 0; sample < cam.SamplesPerPixel; sample++ {
-				r := cam.GetRay(x, y)
-				pixelColor = pixelColor.Add(cam.RayColor(r, cam.MaxDepth, world))
+
+	if !usePool {
+		for y := 0; y < cam.Height; y++ {
+			fmt.Printf("Rendering scanline %d\n", y)
+			for x := 0; x < cam.Width; x++ {
+				img.Set(x, y, cam.RenderPixel(x, y, &world))
 			}
-			img.Set(x, y, convertPixel(pixelColor.Scale(cam.PixelSampleScale)))
+		}
+		return img
+	}
+
+	numWorkers := 8
+	chunkSize := 64
+	wp := NewWorkerPool(numWorkers, &world)
+	wp.Start(img, cam.RenderPixel)
+	i := 0
+	for y := 0; y < cam.Height; y += chunkSize {
+		for x := 0; x < cam.Width; x += chunkSize {
+			job := WorkerJob{
+				XStart: x,
+				YStart: y,
+				XEnd:   min(x+chunkSize, cam.Width),
+				YEnd:   min(y+chunkSize, cam.Height),
+				Chunk:  i,
+			}
+			wp.Jobs <- job
+			i++
 		}
 	}
+
+	// Wait for all workers to finish
+	wp.Wait()
 	return img
+}
+
+func (cam *Camera) RenderPixel(x int, y int, world *World) color.Color {
+	pixelColor := math3.Vec3{}
+	for sample := 0; sample < cam.SamplesPerPixel; sample++ {
+		r := cam.GetRay(x, y)
+		pixelColor = pixelColor.Add(cam.RayColor(r, cam.MaxDepth, world))
+	}
+	return convertPixel(pixelColor.Scale(cam.PixelSampleScale))
 }
 
 func (cam *Camera) GetRay(x, y int) math3.Ray {
@@ -109,7 +140,7 @@ func (cam *Camera) DefocusDiskSample() math3.Vec3 {
 	return cam.Center.Add(cam.DefocusDiskU.Scale(p.X())).Add(cam.DefocusDiskV.Scale(p.Y()))
 }
 
-func (cam *Camera) RayColor(r math3.Ray, depth float64, world World) math3.Vec3 {
+func (cam *Camera) RayColor(r math3.Ray, depth float64, world *World) math3.Vec3 {
 	if depth <= 0 {
 		return math3.Vec3{0.0, 0.0, 0.0}
 	}
