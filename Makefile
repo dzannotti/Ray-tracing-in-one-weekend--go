@@ -66,6 +66,7 @@ fmt:
 run:
 	@echo Running application...
 	@go run $(GOSRC)/main.go
+	@viu final-screenshot.png --width 40
 
 deps:
 	@echo Installing dependencies...

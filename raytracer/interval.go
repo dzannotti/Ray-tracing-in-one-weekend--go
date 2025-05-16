@@ -17,11 +17,11 @@ func (iv Interval) Size() float64 {
 }
 
 func (iv Interval) Contains(v float64) bool {
-	return v >= iv.Min && v <= iv.Max
+	return iv.Min <= v && v <= iv.Max
 }
 
 func (iv Interval) Surrounds(v float64) bool {
-	return v > iv.Min && v < iv.Max
+	return iv.Min < v && v < iv.Max
 }
 
 func (iv Interval) Clamp(v float64) float64 {

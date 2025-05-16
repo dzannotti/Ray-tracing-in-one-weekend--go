@@ -1,6 +1,8 @@
 package raytracer
 
-import "raytracer/math3"
+import (
+	"raytracer/math3"
+)
 
 type World struct {
 	Objects []Hittable
@@ -14,17 +16,17 @@ func (w *World) Add(obj Hittable) {
 	w.Objects = append(w.Objects, obj)
 }
 
-func (w *World) Hit(ray math3.Ray, rayT Interval, rec HitRecord) (bool, HitRecord) {
-	tempRec := HitRecord{}
+func (w *World) Hit(ray math3.Ray, rayT Interval) (HitRecord, bool) {
 	hitAnything := false
 	closestSoFar := rayT.Max
+	rec := HitRecord{}
 	for _, obj := range w.Objects {
-		hasHit, resultRec := obj.Hit(ray, Interval{Min: rayT.Min, Max: closestSoFar}, tempRec)
+		localRec, hasHit := obj.Hit(ray, Interval{Min: rayT.Min, Max: closestSoFar})
 		if hasHit {
 			hitAnything = true
-			closestSoFar = resultRec.T
-			rec = resultRec
+			closestSoFar = localRec.T
+			rec = localRec
 		}
 	}
-	return hitAnything, rec
+	return rec, hitAnything
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"math/rand/v2"
 	"raytracer/math3"
 )
 
@@ -17,7 +18,7 @@ type Camera struct {
 	PixelSampleScale float64
 	DefocusAngle     float64
 	FocusDist        float64
-	CameraCenter     math3.Vec3
+	Center           math3.Vec3
 	LookFrom         math3.Vec3
 	LookAt           math3.Vec3
 	VUp              math3.Vec3
@@ -53,26 +54,26 @@ func NewCamera(params CameraParams) *Camera {
 		FocusDist:        params.FocusDist,
 		LookFrom:         params.LookFrom,
 		LookAt:           params.LookAt,
-		VUp:              math3.Vec3{X: 0, Y: 1, Z: 0},
+		VUp:              math3.Vec3{0, 1, 0},
 	}
 
-	cam.CameraCenter = cam.LookFrom
-	theta := math3.Ded2Rad * cam.VFov
+	cam.Center = cam.LookFrom
+	theta := math3.Deg2Rad(cam.VFov)
 	h := math.Tan(theta / 2.0)
 	viewportHeight := 2 * h * cam.FocusDist
 	viewportWidth := viewportHeight * (float64(cam.Width) / float64(cam.Height))
 	w := cam.LookFrom.Sub(cam.LookAt).Normalize()
 	u := math3.Cross(cam.VUp, w).Normalize()
 	v := math3.Cross(w, u)
-	viewportU := u.K(viewportWidth)
-	viewportV := v.K(-viewportHeight)
+	viewportU := u.Scale(viewportWidth)
+	viewportV := v.Scale(-viewportHeight)
 	cam.PixelDeltaU = viewportU.Div(float64(cam.Width))
 	cam.PixelDeltaV = viewportV.Div(float64(cam.Height))
-	viewportUpperLeft := cam.CameraCenter.Sub(w.K(cam.FocusDist)).Sub(viewportU.Div(2)).Sub(viewportV.Div(2))
+	viewportUpperLeft := cam.Center.Sub(w.Scale(cam.FocusDist)).Sub(viewportU.Div(2)).Sub(viewportV.Div(2))
 	cam.Pixel00Loc = viewportUpperLeft.Add(cam.PixelDeltaU.Add(cam.PixelDeltaV).Div(2))
-	defocusRadius := cam.FocusDist * math.Tan(math3.Ded2Rad*(cam.DefocusAngle/2.0))
-	cam.DefocusDiskU = u.K(defocusRadius)
-	cam.DefocusDiskV = v.K(defocusRadius)
+	defocusRadius := cam.FocusDist * math.Tan(math3.Deg2Rad(cam.DefocusAngle/2.0))
+	cam.DefocusDiskU = u.Scale(defocusRadius)
+	cam.DefocusDiskV = v.Scale(defocusRadius)
 	return cam
 }
 
@@ -84,20 +85,20 @@ func (cam *Camera) Render(world World) *image.RGBA {
 			pixelColor := math3.Vec3{}
 			for sample := 0; sample < cam.SamplesPerPixel; sample++ {
 				r := cam.GetRay(x, y)
-				pixelColor = pixelColor.Add(cam.RayColor(&r, cam.MaxDepth, world))
+				pixelColor = pixelColor.Add(cam.RayColor(r, cam.MaxDepth, world))
 			}
-			img.Set(x, y, convertPixel(pixelColor.K(cam.PixelSampleScale)))
+			img.Set(x, y, convertPixel(pixelColor.Scale(cam.PixelSampleScale)))
 		}
 	}
 	return img
 }
 
 func (cam *Camera) GetRay(x int, y int) math3.Ray {
-	offset := math3.RandomBetween(-0.5, 0.5)
-	pixelSample := cam.Pixel00Loc.Add(cam.PixelDeltaU.K(float64(x) + offset.X)).Add(cam.PixelDeltaV.K(float64(y) + offset.Y))
-	rayOrigin := cam.CameraCenter
-	if cam.DefocusAngle > 0 {
-		rayOrigin = cam.DefocusDiskSample()
+	offset := math3.Vec3{rand.Float64() - 0.5, rand.Float64() - 0.5, 0}
+	pixelSample := cam.Pixel00Loc.Add(cam.PixelDeltaU.Scale(float64(x) + offset.X())).Add(cam.PixelDeltaV.Scale(float64(y) + offset.Y()))
+	rayOrigin := cam.DefocusDiskSample()
+	if cam.DefocusAngle <= 0 {
+		rayOrigin = cam.Center
 	}
 	rayDirection := pixelSample.Sub(rayOrigin)
 	return math3.Ray{Origin: rayOrigin, Direction: rayDirection}
@@ -105,24 +106,21 @@ func (cam *Camera) GetRay(x int, y int) math3.Ray {
 
 func (cam *Camera) DefocusDiskSample() math3.Vec3 {
 	p := math3.RandomInUnitDisk()
-	return cam.CameraCenter.Add(cam.DefocusDiskU.K(p.X)).Add(cam.DefocusDiskV.K(p.Y))
+	return cam.Center.Add(cam.DefocusDiskU.Scale(p.X())).Add(cam.DefocusDiskV.Scale(p.Y()))
 }
 
-func (cam *Camera) RayColor(r *math3.Ray, depth float64, world World) math3.Vec3 {
+func (cam *Camera) RayColor(r math3.Ray, depth float64, world World) math3.Vec3 {
 	if depth <= 0 {
-		return math3.Vec3{}
+		return math3.Vec3{0.0, 0.0, 0.0}
 	}
-	rec := HitRecord{}
-	attenuation := &math3.Vec3{}
-	scattered := &math3.Ray{}
-	hasHit, resultRec := world.Hit(*r, Interval{Min: 0.0001, Max: math.MaxFloat64}, rec)
+	result, hasHit := world.Hit(r, Interval{Min: 0.001, Max: math.MaxFloat64})
 	if hasHit {
-		if resultRec.Material.Scatter(&r, resultRec, &attenuation, &scattered) {
-			return cam.RayColor(scattered, depth-1, world).VectorMultiply(*attenuation)
+		attenuation, scattered, ok := result.Material.Scatter(r, result)
+		if ok {
+			return cam.RayColor(scattered, depth-1, world).Multiply(attenuation)
 		}
-		return math3.Vec3{}
+		return attenuation
 	}
-	unitDir := r.Direction.Normalize()
-	a := 0.5 * (unitDir.Y + 1)
-	return math3.Vec3{X: 1, Y: 1, Z: 1}.K(1 - a).Add(math3.Vec3{X: 0.5, Y: 0.7, Z: 1.0}.K(a))
+	a := 0.5 * (r.Direction.Normalize().Y() + 1.0)
+	return math3.Vec3{1.0, 1.0, 1.0}.Scale(1.0 - a).Add(math3.Vec3{0.5, 0.7, 1.0}.Scale(a))
 }

@@ -11,26 +11,28 @@ type Sphere struct {
 	Material Material
 }
 
-func (s Sphere) Hit(ray math3.Ray, rayT Interval, rec HitRecord) (bool, HitRecord) {
+func (s Sphere) Hit(ray math3.Ray, rayT Interval) (HitRecord, bool) {
 	oc := s.Center.Sub(ray.Origin)
 	a := ray.Direction.LengthSquared()
 	h := math3.Dot(ray.Direction, oc)
 	c := oc.LengthSquared() - s.Radius*s.Radius
 	disc := h*h - a*c
 	if disc < 0 {
-		return false, rec
+		return HitRecord{}, false
 	}
-	root := (h - math.Sqrt(disc)) / a
+	sqrtd := math.Sqrt(disc)
+	root := (h - sqrtd) / a
 	if !rayT.Surrounds(root) {
-		root = (h + math.Sqrt(disc)) / a
+		root = (h + sqrtd) / a
 		if !rayT.Surrounds(root) {
-			return false, rec
+			return HitRecord{}, false
 		}
 	}
+	rec := HitRecord{}
 	rec.T = root
 	rec.P = ray.At(rec.T)
 	outwardNormal := rec.P.Sub(s.Center).Div(s.Radius)
 	rec.SetFaceNormal(ray, outwardNormal)
 	rec.Material = s.Material
-	return true, rec
+	return rec, true
 }

@@ -3,7 +3,7 @@ package raytracer
 import "raytracer/math3"
 
 type Hittable interface {
-	Hit(ray math3.Ray, rayT Interval, rec HitRecord) (bool, HitRecord)
+	Hit(ray math3.Ray, rayT Interval) (HitRecord, bool)
 }
 
 type HitRecord struct {
@@ -18,6 +18,6 @@ func (hr *HitRecord) SetFaceNormal(r math3.Ray, outwardNormal math3.Vec3) {
 	hr.FrontFace = math3.Dot(r.Direction, outwardNormal) < 0
 	hr.Normal = outwardNormal
 	if !hr.FrontFace {
-		hr.Normal = hr.Normal.K(-1)
+		hr.Normal = hr.Normal.Scale(-1)
 	}
 }

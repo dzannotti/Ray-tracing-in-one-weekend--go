@@ -19,9 +19,9 @@ func linearToGamma(val float64) float64 {
 
 func convertPixel(pixel math3.Vec3) color.Color {
 	return color.RGBA{
-		R: colorToInt(linearToGamma(pixel.X) * 255),
-		G: colorToInt(linearToGamma(pixel.Y) * 255),
-		B: colorToInt(linearToGamma(pixel.Z) * 255),
+		R: colorToInt(linearToGamma(pixel[0]) * 255),
+		G: colorToInt(linearToGamma(pixel[1]) * 255),
+		B: colorToInt(linearToGamma(pixel[2]) * 255),
 		A: 255,
 	}
 }

@@ -6,5 +6,5 @@ type Ray struct {
 }
 
 func (ray Ray) At(t float64) Vec3 {
-	return ray.Origin.Add(ray.Direction.K(t))
+	return ray.Origin.Add(ray.Direction.Scale(t))
 }

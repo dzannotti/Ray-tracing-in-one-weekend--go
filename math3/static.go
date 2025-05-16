@@ -5,38 +5,36 @@ import (
 	"math/rand/v2"
 )
 
-const Ded2Rad = (1 / 180.0) * math.Pi
+func Deg2Rad(deg float64) float64 {
+	return (deg / 180.0) * math.Pi
+}
 
 func Dot(v Vec3, u Vec3) float64 {
 	return v.Dot(u)
 }
 
 func Reflect(v Vec3, n Vec3) Vec3 {
-	return v.Sub(n.K(Dot(v, n) * 2))
+	return v.Sub(n.Scale(v.Dot(n) * 2))
 }
 
 func Random() Vec3 {
-	return Vec3{
-		X: rand.Float64(),
-		Y: rand.Float64(),
-		Z: rand.Float64(),
-	}
+	return Vec3{rand.Float64(), rand.Float64(), rand.Float64()}
 }
 
 func RandomBetween(low float64, high float64) Vec3 {
 	return Vec3{
-		X: low + rand.Float64()*(high-low),
-		Y: low + rand.Float64()*(high-low),
-		Z: low + rand.Float64()*(high-low),
+		low + (high-low)*rand.Float64(),
+		low + (high-low)*rand.Float64(),
+		low + (high-low)*rand.Float64(),
 	}
 }
 
 func RandomUnitVector() Vec3 {
 	for {
 		p := RandomBetween(-1, 1)
-		l := p.LengthSquared()
-		if EPSILON < l && l <= 1 {
-			return p.Normalize()
+		lensq := p.LengthSquared()
+		if 1e-160 < lensq && lensq <= 1.0 {
+			return p.Div(math.Sqrt(lensq))
 		}
 	}
 }
@@ -46,13 +44,13 @@ func RandomOnHemisphere(normal Vec3) Vec3 {
 	if Dot(onSphere, normal) > 0 {
 		return onSphere
 	}
-	return onSphere.K(-1)
+	return onSphere.Scale(-1)
 }
 
 func RandomInUnitDisk() Vec3 {
 	for {
 		p := RandomBetween(-1, 1)
-		p.Z = 0
+		p[2] = 0
 		if p.LengthSquared() < 1 {
 			return p
 		}
@@ -60,9 +58,9 @@ func RandomInUnitDisk() Vec3 {
 }
 
 func Refract(uv Vec3, n Vec3, etaiOverEtat float64) Vec3 {
-	cosT := math.Min(Dot(uv.K(-1), n), 1)
-	rOutPerp := uv.Add(n.K(cosT).K(etaiOverEtat))
-	rOutParallel := n.K(-math.Sqrt(math.Abs(1 - rOutPerp.LengthSquared())))
+	cosT := math.Min(Dot(uv.Scale(-1), n), 1.0)
+	rOutPerp := uv.Add(n.Scale(cosT)).Scale(etaiOverEtat)
+	rOutParallel := n.Scale(-math.Sqrt(math.Abs(1.0 - rOutPerp.LengthSquared())))
 	return rOutPerp.Add(rOutParallel)
 }
 
