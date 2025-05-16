@@ -79,7 +79,7 @@ func main() {
 	camera := raytracer.NewCamera(raytracer.CameraParams{
 		Width:           320,
 		AspectRatio:     16 / 9.0,
-		SamplesPerPixel: 1, // 100
+		SamplesPerPixel: 100,
 		MaxDepth:        50,
 		VFov:            20,
 		LookFrom:        math3.Vec3{X: 13, Y: 2, Z: 3},

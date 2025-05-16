@@ -86,15 +86,14 @@ func (cam *Camera) Render(world World) *image.RGBA {
 				r := cam.GetRay(x, y)
 				pixelColor = pixelColor.Add(cam.RayColor(&r, cam.MaxDepth, world))
 			}
-			img.Set(x, y, convertPixel(pixelColor))
+			img.Set(x, y, convertPixel(pixelColor.K(cam.PixelSampleScale)))
 		}
 	}
 	return img
 }
 
 func (cam *Camera) GetRay(x int, y int) math3.Ray {
-	//offset := math3.RandomBetween(-0.5, 0.5)
-	offset = math3.Vec3{}
+	offset := math3.RandomBetween(-0.5, 0.5)
 	pixelSample := cam.Pixel00Loc.Add(cam.PixelDeltaU.K(float64(x) + offset.X)).Add(cam.PixelDeltaV.K(float64(y) + offset.Y))
 	rayOrigin := cam.CameraCenter
 	if cam.DefocusAngle > 0 {

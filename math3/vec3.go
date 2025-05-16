@@ -64,7 +64,7 @@ func (vec Vec3) Div(n float64) Vec3 {
 }
 
 func (vec Vec3) LengthSquared() float64 {
-	return vec.X*vec.X + vec.Y + vec.Y + vec.Z*vec.Z
+	return vec.X*vec.X + vec.Y*vec.Y + vec.Z*vec.Z
 }
 
 func (vec Vec3) Length() float64 {
