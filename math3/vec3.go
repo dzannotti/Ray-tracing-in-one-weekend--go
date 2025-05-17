@@ -1,6 +1,10 @@
 package math3
 
-import "math"
+import (
+	"math"
+
+	"github.com/viterin/vek"
+)
 
 const EPSILON = 1e-8
 
@@ -11,35 +15,23 @@ func (vec Vec3) Y() float64 { return vec[1] }
 func (vec Vec3) Z() float64 { return vec[2] }
 
 func (vec Vec3) Sub(other Vec3) Vec3 {
-	return Vec3{
-		vec[0] - other[0],
-		vec[1] - other[1],
-		vec[2] - other[2],
-	}
+	return *(*Vec3)(vek.Sub(vec[:], other[:]))
 }
 
 func (vec Vec3) Add(other Vec3) Vec3 {
-	return Vec3{
-		vec[0] + other[0],
-		vec[1] + other[1],
-		vec[2] + other[2],
-	}
+	return *(*Vec3)(vek.Add(vec[:], other[:]))
 }
 
 func (vec Vec3) Scale(k float64) Vec3 {
-	return Vec3{
-		vec[0] * k,
-		vec[1] * k,
-		vec[2] * k,
-	}
+	return *(*Vec3)(vek.MulNumber(vec[:], k))
 }
 
 func (vec Vec3) Div(k float64) Vec3 {
-	return vec.Scale(1 / k)
+	return *(*Vec3)(vek.DivNumber(vec[:], k))
 }
 
 func (vec Vec3) Dot(other Vec3) float64 {
-	return vec[0]*other[0] + vec[1]*other[1] + vec[2]*other[2]
+	return vek.Dot(vec[:], other[:])
 }
 
 func (vec Vec3) Cross(other Vec3) Vec3 {
@@ -59,7 +51,7 @@ func (vec Vec3) Normalize() Vec3 {
 }
 
 func (vec Vec3) Length() float64 {
-	return math.Sqrt(vec.LengthSquared())
+	return vek.Norm(vec[:])
 }
 
 func (vec Vec3) LengthSquared() float64 {
@@ -71,5 +63,6 @@ func (vec Vec3) IsNearZero() bool {
 }
 
 func (vec Vec3) Multiply(v Vec3) Vec3 {
-	return Vec3{vec[0] * v[0], vec[1] * v[1], vec[2] * v[2]}
+	//return Vec3{vec[0] * v[0], vec[1] * v[1], vec[2] * v[2]}
+	return *(*Vec3)(vek.Mul(vec[:], v[:]))
 }

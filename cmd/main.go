@@ -56,9 +56,9 @@ func main() {
 	world.Add(raytracer.Sphere{Center: math3.Vec3{4, 1, 0}, Radius: 1, Material: mat3})
 
 	camera := raytracer.NewCamera(raytracer.CameraParams{
-		Width:           1200,
+		Width:           300,
 		AspectRatio:     16 / 9.0,
-		SamplesPerPixel: 500,
+		SamplesPerPixel: 1,
 		MaxDepth:        50,
 		VFov:            20,
 		LookFrom:        math3.Vec3{13, 2, 3},
