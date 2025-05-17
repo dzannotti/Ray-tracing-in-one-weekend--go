@@ -6,16 +6,25 @@ import (
 )
 
 type Sphere struct {
-	Center   math3.Vec3
-	Radius   float64
-	Material Material
+	Center       math3.Vec3
+	Radius       float64
+	Material     Material
+	RadiusSquare float64
 }
 
-func (s Sphere) Hit(ray math3.Ray, rayT Interval) (HitRecord, bool) {
+func (s *Sphere) Prepare() {
+	s.RadiusSquare = s.Radius * s.Radius
+}
+
+func (s *Sphere) Origin() math3.Vec3 {
+	return s.Center
+}
+
+func (s *Sphere) Hit(ray math3.Ray, rayT Interval) (HitRecord, bool) {
 	oc := s.Center.Sub(ray.Origin)
 	a := ray.Direction.LengthSquared()
 	h := math3.Dot(ray.Direction, oc)
-	c := oc.LengthSquared() - s.Radius*s.Radius
+	c := oc.LengthSquared() - s.RadiusSquare
 	disc := h*h - a*c
 	if disc < 0 {
 		return HitRecord{}, false

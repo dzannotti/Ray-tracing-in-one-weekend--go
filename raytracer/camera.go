@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"raytracer/math3"
+	"runtime"
 )
 
 type Camera struct {
@@ -14,7 +15,7 @@ type Camera struct {
 	Height           int
 	AspectRatio      float64
 	SamplesPerPixel  int
-	MaxDepth         float64
+	MaxDepth         int
 	VFov             float64
 	PixelSampleScale float64
 	DefocusAngle     float64
@@ -34,7 +35,7 @@ type CameraParams struct {
 	Width           int
 	AspectRatio     float64
 	SamplesPerPixel int
-	MaxDepth        float64
+	MaxDepth        int
 	VFov            float64
 	LookFrom        math3.Vec3
 	LookAt          math3.Vec3
@@ -78,39 +79,52 @@ func NewCamera(params CameraParams) *Camera {
 	return cam
 }
 
-func (cam *Camera) Render(world World, usePool bool) *image.RGBA {
-	img := image.NewRGBA(image.Rect(0, 0, cam.Width, cam.Height))
-
+func (cam *Camera) Render(world *World, usePool bool) *image.RGBA {
 	if !usePool {
+		img := image.NewRGBA(image.Rect(0, 0, cam.Width, cam.Height))
 		for y := 0; y < cam.Height; y++ {
 			fmt.Printf("Rendering scanline %d\n", y)
 			for x := 0; x < cam.Width; x++ {
-				img.Set(x, y, cam.RenderPixel(x, y, &world))
+				img.Set(x, y, cam.RenderPixel(x, y, world))
 			}
 		}
 		return img
 	}
+	return cam.RenderAsync(world)
+}
 
-	numWorkers := 8
-	chunkSize := 64
-	wp := NewWorkerPool(numWorkers, &world)
-	wp.Start(img, cam.RenderPixel)
-	i := 0
+func (cam *Camera) RenderAsync(world *World) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, cam.Width, cam.Height))
+	numWorkers := runtime.NumCPU() - 1
+	chunkSize := 32
+	wp := NewWorkerPool(numWorkers, world)
+	totalChunks := int(math.Ceil(float64(cam.Width)/float64(chunkSize))) * int(math.Ceil(float64(cam.Height)/float64(chunkSize)))
+	chunks := make([]WorkerJob, 0, totalChunks)
+	chunkID := 0
+
 	for y := 0; y < cam.Height; y += chunkSize {
 		for x := 0; x < cam.Width; x += chunkSize {
-			job := WorkerJob{
+			chunks = append(chunks, WorkerJob{
 				XStart: x,
 				YStart: y,
 				XEnd:   min(x+chunkSize, cam.Width),
 				YEnd:   min(y+chunkSize, cam.Height),
-				Chunk:  i,
-			}
-			wp.Jobs <- job
-			i++
+				Chunk:  chunkID,
+			})
+			chunkID++
 		}
 	}
 
-	// Wait for all workers to finish
+	rand.Shuffle(len(chunks), func(i, j int) {
+		chunks[i], chunks[j] = chunks[j], chunks[i]
+	})
+
+	wp.Start(chunkID, img, cam.RenderPixel)
+	fmt.Printf("Total jobs: %d\n", chunkID+1)
+	for _, job := range chunks {
+		wp.Jobs <- job
+	}
+
 	wp.Wait()
 	return img
 }
@@ -140,12 +154,19 @@ func (cam *Camera) DefocusDiskSample() math3.Vec3 {
 	return cam.Center.Add(cam.DefocusDiskU.Scale(p.X())).Add(cam.DefocusDiskV.Scale(p.Y()))
 }
 
-func (cam *Camera) RayColor(r math3.Ray, depth float64, world *World) math3.Vec3 {
+func (cam *Camera) RayColor(r math3.Ray, depth int, world *World) math3.Vec3 {
 	if depth <= 0 {
 		return math3.Vec3{0.0, 0.0, 0.0}
 	}
 	if result, hasHit := world.Hit(r, Interval{Min: 0.001, Max: math.MaxFloat64}); hasHit {
 		if attenuation, scattered, ok := result.Material.Scatter(r, result); ok {
+			survivalScale, shouldTerminate := cam.ShouldTerminateRay(&attenuation, depth)
+			if shouldTerminate {
+				return math3.Vec3{0.0, 0.0, 0.0}
+			}
+			if survivalScale > 0 {
+				attenuation = attenuation.Scale(1 / survivalScale)
+			}
 			return cam.RayColor(scattered, depth-1, world).Multiply(attenuation)
 		}
 		return math3.Vec3{}
@@ -153,4 +174,19 @@ func (cam *Camera) RayColor(r math3.Ray, depth float64, world *World) math3.Vec3
 	d := r.Direction.Normalize()
 	a := 0.5 * (d.Y() + 1.0)
 	return math3.Vec3{1.0, 1.0, 1.0}.Scale(1.0 - a).Add(math3.Vec3{0.5, 0.7, 1.0}.Scale(a))
+}
+
+func (cam *Camera) ShouldTerminateRay(attenuation *math3.Vec3, depth int) (float64, bool) {
+	energy := attenuation.MaxComponent()
+	var survivalProb float64
+	// Start using Russian Roulette after a few bounces
+	if depth < cam.MaxDepth-2 {
+		terminationProb := math.Max(0.0, 1.0-energy)
+		if rand.Float64() < terminationProb {
+			return 0, true
+		}
+
+		survivalProb = 1.0 - terminationProb
+	}
+	return survivalProb, false
 }

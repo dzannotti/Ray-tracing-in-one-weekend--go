@@ -8,7 +8,7 @@ Based off of the excellent [Ray Tracing in One Weekend](https://raytracing.githu
 make run
 ```
 
-takes about 
+takes about ~13mins on my machine to run
 
 The paramaters of the camera and the setup of material and objects in the world are all located in `./cmd/main.go`
 

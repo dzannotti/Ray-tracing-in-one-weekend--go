@@ -2,6 +2,7 @@ package raytracer
 
 import (
 	"raytracer/math3"
+	"slices"
 )
 
 type World struct {
@@ -14,6 +15,17 @@ func (w *World) Clear() {
 
 func (w *World) Add(obj Hittable) {
 	w.Objects = append(w.Objects, obj)
+}
+
+func (w *World) Prepare() {
+	for _, obj := range w.Objects {
+		obj.Prepare()
+	}
+	// closest first should lead to less iterations
+	slices.SortFunc(w.Objects, func(a Hittable, b Hittable) int {
+		return int(a.Origin().Z() - b.Origin().Z())
+	})
+
 }
 
 func (w *World) Hit(ray math3.Ray, rayT Interval) (HitRecord, bool) {

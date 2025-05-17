@@ -3,7 +3,9 @@ package raytracer
 import "raytracer/math3"
 
 type Hittable interface {
+	Origin() math3.Vec3
 	Hit(ray math3.Ray, rayT Interval) (HitRecord, bool)
+	Prepare()
 }
 
 type HitRecord struct {

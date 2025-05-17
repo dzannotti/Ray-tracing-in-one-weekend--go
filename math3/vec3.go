@@ -73,3 +73,7 @@ func (vec Vec3) IsNearZero() bool {
 func (vec Vec3) Multiply(v Vec3) Vec3 {
 	return Vec3{vec[0] * v[0], vec[1] * v[1], vec[2] * v[2]}
 }
+
+func (v Vec3) MaxComponent() float64 {
+	return math.Max(math.Max(v.X(), v.Y()), v.Z())
+}

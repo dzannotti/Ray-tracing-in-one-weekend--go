@@ -3,26 +3,20 @@ package main
 import (
 	"fmt"
 	"image/png"
-	"log"
 	"math/rand/v2"
 	"os"
 	"raytracer/math3"
 	"raytracer/raytracer"
-	"runtime/pprof"
+	"time"
 )
 
 func main() {
-	f, err := os.Create("cpu_profile.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
+	start := time.Now()
 
 	world := raytracer.World{}
 
 	ground := raytracer.Lambertian{Albedo: math3.Vec3{0.5, 0.5, 0.5}}
-	world.Add(raytracer.Sphere{Center: math3.Vec3{0, -1000, -1}, Radius: 1000, Material: ground})
+	world.Add(&raytracer.Sphere{Center: math3.Vec3{0, -1000, -1}, Radius: 1000, Material: ground})
 
 	for a := -11; a < 11; a++ {
 		for b := -11; b < 11; b++ {
@@ -42,7 +36,7 @@ func main() {
 				default:
 					material = raytracer.Dialectric{RefractionIndex: 1.5}
 				}
-				world.Add(raytracer.Sphere{Center: center, Radius: 0.2, Material: material})
+				world.Add(&raytracer.Sphere{Center: center, Radius: 0.2, Material: material})
 			}
 		}
 	}
@@ -51,10 +45,11 @@ func main() {
 	mat2 := raytracer.Lambertian{Albedo: math3.Vec3{0.4, 0.2, 0.1}}
 	mat3 := raytracer.Metal{Albedo: math3.Vec3{0.7, 0.6, 0.5}, Fuzz: 0.0}
 
-	world.Add(raytracer.Sphere{Center: math3.Vec3{0, 1, 0}, Radius: 1, Material: mat1})
-	world.Add(raytracer.Sphere{Center: math3.Vec3{-4, 1, 0}, Radius: 1, Material: mat2})
-	world.Add(raytracer.Sphere{Center: math3.Vec3{4, 1, 0}, Radius: 1, Material: mat3})
+	world.Add(&raytracer.Sphere{Center: math3.Vec3{0, 1, 0}, Radius: 1, Material: mat1})
+	world.Add(&raytracer.Sphere{Center: math3.Vec3{-4, 1, 0}, Radius: 1, Material: mat2})
+	world.Add(&raytracer.Sphere{Center: math3.Vec3{4, 1, 0}, Radius: 1, Material: mat3})
 
+	world.Prepare()
 	camera := raytracer.NewCamera(raytracer.CameraParams{
 		Width:           1200,
 		AspectRatio:     16 / 9.0,
@@ -66,7 +61,7 @@ func main() {
 		DefocusAngle:    0.6,
 		FocusDist:       10,
 	})
-	render := camera.Render(world, true)
+	render := camera.Render(&world, true)
 	fmt.Println("denoising....")
 	img := raytracer.BilateralFilter(render, 3.0, 0.2)
 	file, err := os.Create("final-screenshot.png")
@@ -77,12 +72,6 @@ func main() {
 	if err := png.Encode(file, img); err != nil {
 		panic("Could not write to file")
 	}
-
-	fmt.Println("Image saved as final-screenshot.png")
-	mf, err := os.Create("mem_profile.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.WriteHeapProfile(mf)
-	mf.Close()
+	total := time.Since(start)
+	fmt.Printf("Took: %s\n", total.String())
 }
